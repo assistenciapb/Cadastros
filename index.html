@@ -62,22 +62,20 @@
     </section>
   </main>
 
-  <!-- Modal Avisos -->
+  <!-- Modal de Avisos -->
   <div id="modalAvisos" class="modal" style="display:none;">
     <div class="modal-content">
-      <div class="modal-header">
-        <h2>Avisos</h2>
-        <button id="btnFecharModal" class="btn danger">Fechar</button>
-      </div>
-      <textarea id="txtAviso" rows="10" placeholder="Digite sua anotação aqui..."></textarea>
+      <h2>Avisos</h2>
+      <textarea id="novoAviso" rows="4" placeholder="Escreva seu aviso aqui..."></textarea>
       <div class="row between">
-        <button id="btnSalvarAviso" class="btn primary">Salvar</button>
-        <span class="muted">As anotações são compartilhadas com todos os usuários.</span>
+        <button id="btnAdicionarAviso" class="btn primary">Adicionar Aviso</button>
+        <button id="btnFecharAvisos" class="btn danger">Fechar</button>
       </div>
       <ul id="listaAvisos" class="names"></ul>
     </div>
   </div>
 
+  <!-- Script modular -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
