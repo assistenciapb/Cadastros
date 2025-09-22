@@ -62,9 +62,9 @@ body{
 /* Main */
 .app-main{ 
   flex:1; 
-  min-height:0; /* permite scroll interno */
+  min-height:0; 
   display:flex; 
-  height: calc(100vh - 72px); /* altura total menos header */
+  height: calc(100vh - 72px);
 }
 
 /* Sidebar */
@@ -77,7 +77,7 @@ body{
   flex-direction:column; 
   gap:16px;
   overflow-y:auto;
-  max-height:100%; /* não ultrapassa app-main */
+  max-height:100%; 
 }
 .sidebar-head h2{ margin:0; font-size:1.05rem; }
 .new-list{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; }
@@ -89,7 +89,7 @@ body{
 
 .list-nav{
   list-style:none; padding:0; margin:0; overflow:auto; flex:1;
-  max-height:calc(100% - 120px); /* ajusta para caber dentro da sidebar */
+  max-height:calc(100% - 120px); 
 }
 .list-nav li{
   display:flex; align-items:center; justify-content:space-between;
@@ -107,7 +107,7 @@ body{
 .content{
   flex:1;
   padding:24px;
-  overflow-y:auto; /* scroll interno */
+  overflow-y:auto; 
   min-height:0;
   display:flex; flex-direction:column;
 }
@@ -130,7 +130,7 @@ textarea{
 /* Lista de nomes / resultados */
 .names{
   list-style:none; padding:0; margin:0; overflow-y:auto;
-  max-height:400px; /* altura máxima com scroll */
+  max-height:400px; 
 }
 .names li{
   display:flex; align-items:center; justify-content:space-between;
@@ -149,30 +149,17 @@ textarea{
 .btn.danger{ background:var(--danger); color:#fff; }
 .btn.danger:hover{ background:var(--danger-700); }
 
-/* Modal full screen */
-.modal{
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center;
-  z-index:1000;
-}
-.modal-content{
-  background:var(--panel); width:90%; max-width:1000px; max-height:90%; padding:24px;
-  border-radius:12px; display:flex; flex-direction:column; gap:12px; overflow-y:auto;
-}
-.modal-header{ display:flex; justify-content:space-between; align-items:center; }
-#txtAviso{ width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); resize:vertical; background:#fbfdff; }
-
 /* Responsivo */
 @media (max-width: 900px){
   .sidebar{ width:260px; }
 }
 @media (max-width: 720px){
   .app-main{
-    flex-direction: row; /* mantém lado a lado */
-    min-height: calc(100vh - 72px); /* altura total menos header */
+    flex-direction: row;
+    min-height: calc(100vh - 72px);
   }
   .sidebar{
-    width:200px; /* reduz largura da sidebar */
+    width:200px;
     max-height:100%;
     overflow-y:auto;
   }
@@ -182,9 +169,38 @@ textarea{
     min-height:0;
   }
   .list-nav{
-    max-height: calc(100% - 120px); /* sidebar scroll */
+    max-height: calc(100% - 120px);
   }
   .names{
-    max-height:400px; /* mantém scroll interno */
+    max-height:400px;
   }
 }
+
+/* Modal Avisos */
+#modalAvisos {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.6); /* fundo semitransparente */
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+#modalAvisos .modal-content {
+  width: 70vw;        /* 70% da largura da tela */
+  height: 70vh;       /* 70% da altura da tela */
+  background: var(--panel);
+  padding: 24px;
+  box-sizing: border-box;
+  overflow-y: auto;   /* scroll interno se necessário */
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
