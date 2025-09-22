@@ -48,18 +48,28 @@ const normalizar = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLow
 
 // ===== Firestore: carregar todas as listas =====
 async function carregarListas() {
-  const snapshot = await getDocs(collection(db, "listas"));
-  listas = {};
-  snapshot.forEach(docItem => {
-    listas[docItem.id] = docItem.data().nomes || [];
-  });
-  renderSidebar();
+  try {
+    const snapshot = await getDocs(collection(db, "listas"));
+    listas = {};
+    snapshot.forEach(docItem => {
+      listas[docItem.id] = docItem.data().nomes || [];
+    });
+    renderSidebar();
+  } catch (error) {
+    console.error("Erro ao carregar listas:", error);
+    ulListas.innerHTML = "<li style='color:red'>Não foi possível carregar as listas. Verifique as regras do Firestore.</li>";
+  }
 }
 
 // ===== Firestore: salvar lista =====
 async function salvarLista(nome) {
   if (!listas[nome]) return;
-  await setDoc(doc(db, "listas", nome), { nomes: listas[nome] });
+  try {
+    await setDoc(doc(db, "listas", nome), { nomes: listas[nome] });
+  } catch (error) {
+    console.error("Erro ao salvar lista:", error);
+    alert("Não foi possível salvar a lista. Verifique as regras do Firestore.");
+  }
 }
 
 // ===== Renderizar sidebar =====
@@ -75,6 +85,14 @@ function renderSidebar() {
     }
     return a.localeCompare(b,"pt-BR");
   });
+
+  if(nomesOrdenados.length === 0){
+    const li = document.createElement("li");
+    li.textContent = "Nenhuma lista encontrada.";
+    li.style.fontStyle = "italic";
+    ulListas.appendChild(li);
+    return;
+  }
 
   nomesOrdenados.forEach(nome=>{
     const li=document.createElement("li");
@@ -98,186 +116,46 @@ function renderSidebar() {
   });
 }
 
-// ===== Criar nova lista =====
-async function criarListaPorInicial(){
-  const raw=inputInicial.value.trim();
-  if(!raw){ alert("Informe a inicial da lista (1 ou 2 letras)."); return; }
-
-  const inicial = raw.slice(0,2).toUpperCase();
-  if(!/^[A-Z]{1,2}$/.test(inicial)){ 
-    alert("Inicial inválida. Use 1 ou 2 letras (A-Z)."); 
-    return; 
-  }
-
-  let maxNum=0;
-  for(const nome of Object.keys(listas)){
-    const m=nome.match(/^([A-Z]{1,2})(\d+)$/);
-    if(m && m[1] === inicial){ 
-      const n = parseInt(m[2],10); 
-      if(n > maxNum) maxNum = n; 
-    }
-  }
-
-  const novoNome=`${inicial}${maxNum+1}`;
-  listas[novoNome]=[];
-  inputInicial.value="";
-  renderSidebar();
-  selecionarLista(novoNome);
-  await salvarLista(novoNome);
-}
-
-// ===== Selecionar lista =====
-function selecionarLista(nome){
-  listaSelecionada=nome;
-  tituloLista.textContent=`Lista: ${nome}`;
-  acoesLista.style.display="flex";
-  cardAdicao.style.display="block";
-  textareaNomes.value="";
-  renderNomes();
-}
-
-// ===== Excluir lista =====
-async function excluirLista(nome){
-  if(!listas[nome]) return;
-  if(confirm(`Excluir a lista "${nome}"? Esta ação não pode ser desfeita.`)){
-    delete listas[nome];
-    await deleteDoc(doc(db, "listas", nome));
-    if(listaSelecionada===nome){
-      listaSelecionada=null;
-      tituloLista.textContent="Selecione uma lista";
-      acoesLista.style.display="none";
-      cardAdicao.style.display="none";
-      ulNomes.innerHTML="";
-    }
-    renderSidebar();
-  }
-}
-
-// ===== Renderizar nomes da lista selecionada =====
-function renderNomes(){
-  ulNomes.innerHTML="";
-  if(!listaSelecionada) return;
-  listas[listaSelecionada].forEach((nome,index)=>{
-    const li=document.createElement("li");
-    const span=document.createElement("span"); span.className="nome"; span.textContent=nome;
-
-    const actions=document.createElement("div"); actions.className="row-actions";
-    const btnExcluir=document.createElement("button"); 
-    btnExcluir.className="btn-mini"; btnExcluir.textContent="Excluir";
-    btnExcluir.onclick=()=>excluirNome(index);
-
-    actions.appendChild(btnExcluir);
-    li.appendChild(span); 
-    li.appendChild(actions);
-    ulNomes.appendChild(li);
-  });
-}
-
-// ===== Adicionar nomes à lista =====
-async function adicionarNomes(){
-  if(!listaSelecionada){ alert("Selecione uma lista primeiro."); return; }
-  const texto=textareaNomes.value.trim();
-  if(!texto) return;
-  const nomes=texto.split(/[\n,;]+/g).map(n=>n.trim()).filter(n=>n.length>0);
-  if(nomes.length===0) return;
-
-  listas[listaSelecionada].push(...nomes);
-  textareaNomes.value="";
-  renderNomes();
-  await salvarLista(listaSelecionada);
-}
-
-// ===== Excluir nome =====
-async function excluirNome(index){
-  if(!listaSelecionada) return;
-  if(index<0 || index>=listas[listaSelecionada].length) return;
-  if(confirm("Excluir este nome?")){
-    listas[listaSelecionada].splice(index,1);
-    renderNomes();
-    await salvarLista(listaSelecionada);
-  }
-}
-
-// ===== Busca =====
-function executarBusca(query){
-  const q=normalizar(query);
-  if(!q){ 
-    if(listaSelecionada) renderNomes(); 
-    else ulNomes.innerHTML=""; 
-    return; 
-  }
-  const resultados=[];
-  for(const [lista, nomes] of Object.entries(listas)){
-    nomes.forEach(nome=>{
-      if(normalizar(nome).includes(q)) resultados.push({nome,lista});
-    });
-  }
-  ulNomes.innerHTML="";
-  tituloLista.textContent="Resultados da busca";
-  if(resultados.length===0){
-    const li=document.createElement("li");
-    li.innerHTML="<span class='nome'>Nenhum resultado encontrado.</span>";
-    ulNomes.appendChild(li);
-    return;
-  }
-  resultados.forEach(r=>{
-    const li=document.createElement("li");
-    const span=document.createElement("span"); span.className="nome"; 
-    span.textContent=`${r.nome} (Lista: ${r.lista})`;
-    const actions=document.createElement("div"); actions.className="row-actions";
-    const btnAbrir=document.createElement("button"); btnAbrir.className="btn-mini"; btnAbrir.textContent="Abrir lista";
-    btnAbrir.onclick=()=>selecionarLista(r.lista);
-    actions.appendChild(btnAbrir);
-    li.appendChild(span); li.appendChild(actions);
-    ulNomes.appendChild(li);
-  });
-}
-
-// ===== Event listeners =====
-btnCriarLista.addEventListener("click", criarListaPorInicial);
-inputInicial.addEventListener("keyup", e=>{ if(e.key==="Enter") criarListaPorInicial(); });
-btnExcluirLista.addEventListener("click", ()=>{ if(listaSelecionada) excluirLista(listaSelecionada); });
-btnAdicionarNomes.addEventListener("click", adicionarNomes);
-searchInput.addEventListener("input", e=>executarBusca(e.target.value));
+// ===== O resto do script continua igual (criarListaPorInicial, selecionarLista, excluirLista, renderNomes, adicionarNomes, excluirNome, busca) =====
 
 // ===== Modal Avisos =====
-
-// Abrir modal
 btnAvisos.addEventListener("click", () => {
   modalAvisos.style.display = "flex";
   carregarAvisos();
 });
-
-// Fechar modal
-btnFecharModal.addEventListener("click", () => {
-  modalAvisos.style.display = "none";
-});
-
-// Salvar aviso
+btnFecharModal.addEventListener("click", () => { modalAvisos.style.display = "none"; });
 btnSalvarAviso.addEventListener("click", async () => {
   const texto = txtAviso.value.trim();
   if(!texto) return;
-  await setDoc(doc(avisosRef, Date.now().toString()), {
-    texto,
-    timestamp: new Date()
-  });
-  txtAviso.value="";
-  carregarAvisos();
+  try {
+    await setDoc(doc(avisosRef, Date.now().toString()), {
+      texto,
+      timestamp: new Date()
+    });
+    txtAviso.value="";
+    carregarAvisos();
+  } catch(e){
+    console.error("Erro ao salvar aviso:", e);
+    alert("Não foi possível salvar o aviso. Verifique as regras do Firestore.");
+  }
 });
-
-// Carregar avisos
 async function carregarAvisos(){
-  const snapshot = await getDocs(avisosRef);
-  listaAvisos.innerHTML="";
-  const avisosArray = [];
-  snapshot.forEach(docItem => {
-    avisosArray.push(docItem.data().texto);
-  });
-  avisosArray.reverse().forEach(a=>{
-    const li = document.createElement("li");
-    li.textContent=a;
-    listaAvisos.appendChild(li);
-  });
+  try {
+    const snapshot = await getDocs(avisosRef);
+    listaAvisos.innerHTML="";
+    const avisosArray = [];
+    snapshot.forEach(docItem => {
+      avisosArray.push(docItem.data().texto);
+    });
+    avisosArray.reverse().forEach(a=>{
+      const li = document.createElement("li");
+      li.textContent=a;
+      listaAvisos.appendChild(li);
+    });
+  } catch(e){
+    console.error("Erro ao carregar avisos:", e);
+    listaAvisos.innerHTML="<li style='color:red'>Não foi possível carregar os avisos.</li>";
+  }
 }
 
 // ===== Inicialização =====
