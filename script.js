@@ -90,32 +90,47 @@ function renderSidebar() {
 }
 
 // ===== Criar nova lista =====
-async function criarListaPorInicial(){
-  const raw=inputInicial.value.trim();
-  if(!raw){ alert("Informe a inicial da lista (1 ou 2 letras)."); return; }
-
-  const inicial = raw.slice(0,2).toUpperCase();
-  if(!/^[A-Z]{1,2}$/.test(inicial)){ 
-    alert("Inicial inválida. Use 1 ou 2 letras (A-Z)."); 
+async function criarLista(){
+  const raw = inputInicial.value.trim();
+  if(!raw){ 
+    alert("Informe o nome da nova caixa."); 
     return; 
   }
 
-  let maxNum=0;
-  for(const nome of Object.keys(listas)){
-    const m=nome.match(/^([A-Z]{1,2})(\d+)$/);
-    if(m && m[1] === inicial){ 
-      const n = parseInt(m[2],10); 
-      if(n > maxNum) maxNum = n; 
+  // Checa se é só letras (1 ou 2) → modo automático
+  const matchInicial = raw.match(/^([A-Za-z]{1,2})$/);
+  let novoNome;
+
+  if(matchInicial){ 
+    const inicial = matchInicial[1].toUpperCase();
+    // Procura o maior número existente para essa inicial
+    let maxNum = 0;
+    for(const nome of Object.keys(listas)){
+      const m = nome.match(/^([A-Z]{1,2})(\d+)$/);
+      if(m && m[1] === inicial){ 
+        const n = parseInt(m[2],10); 
+        if(n > maxNum) maxNum = n; 
+      }
     }
+    novoNome = `${inicial}${maxNum+1}`;
+  } else {
+    // Nome personalizado: usa exatamente o que o usuário digitou
+    novoNome = raw;
   }
 
-  const novoNome=`${inicial}${maxNum+1}`;
-  listas[novoNome]=[];
-  inputInicial.value="";
+  if(listas[novoNome]){
+    alert("Já existe uma caixa com esse nome.");
+    return;
+  }
+
+  listas[novoNome] = [];
+  inputInicial.value = "";
   renderSidebar();
   selecionarLista(novoNome);
   await salvarLista(novoNome);
 }
+
+
 
 // ===== Selecionar lista =====
 function selecionarLista(nome){
@@ -225,8 +240,8 @@ function executarBusca(query){
 }
 
 // ===== Event listeners =====
-btnCriarLista.addEventListener("click", criarListaPorInicial);
-inputInicial.addEventListener("keyup", e=>{ if(e.key==="Enter") criarListaPorInicial(); });
+btnCriarLista.addEventListener("click", criarLista);
+inputInicial.addEventListener("keyup", e=>{ if(e.key==="Enter") criarLista(); });
 btnExcluirLista.addEventListener("click", ()=>{ if(listaSelecionada) excluirLista(listaSelecionada); });
 btnAdicionarNomes.addEventListener("click", adicionarNomes);
 searchInput.addEventListener("input", e=>executarBusca(e.target.value));
